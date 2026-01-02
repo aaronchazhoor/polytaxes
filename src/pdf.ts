@@ -118,37 +118,59 @@ async function generateDetailedMode(
   PDFDocument: any
 ): Promise<{ files: Blob[]; filenames: string[] }> {
   const templateBytes = await loadTemplate();
-  const pdfDoc = await PDFDocument.load(templateBytes);
-  const form = pdfDoc.getForm();
 
-  // Part I - Short Term
+  // Create final merged PDF
+  const mergedPdf = await PDFDocument.create();
+
+  // Process short-term transactions (Part I)
   if (report.shortTerm.length > 0) {
-    await fillDetailedPart(
-      pdfDoc,
-      form,
-      report.shortTerm,
-      report.shortTermSummary,
-      'Part1',
-      'f1',
-      'c1_1'
-    );
+    const shortTermPages = Math.ceil(report.shortTerm.length / TRANSACTIONS_PER_PAGE);
+
+    for (let pageIdx = 0; pageIdx < shortTermPages; pageIdx++) {
+      const start = pageIdx * TRANSACTIONS_PER_PAGE;
+      const end = Math.min(start + TRANSACTIONS_PER_PAGE, report.shortTerm.length);
+      const pageEntries = report.shortTerm.slice(start, end);
+
+      // Load fresh template for each page
+      const pagePdf = await PDFDocument.load(templateBytes);
+      const form = pagePdf.getForm();
+
+      // Fill Part I (page 0)
+      fillPartIPage(form, pageEntries, report.shortTermSummary, pageIdx === shortTermPages - 1);
+
+      form.flatten();
+
+      // Copy Part I page to merged PDF
+      const [copiedPage] = await mergedPdf.copyPages(pagePdf, [0]);
+      mergedPdf.addPage(copiedPage);
+    }
   }
 
-  // Part II - Long Term
+  // Process long-term transactions (Part II)
   if (report.longTerm.length > 0) {
-    await fillDetailedPart(
-      pdfDoc,
-      form,
-      report.longTerm,
-      report.longTermSummary,
-      'Part2',
-      'f2',
-      'c2_1'
-    );
+    const longTermPages = Math.ceil(report.longTerm.length / TRANSACTIONS_PER_PAGE);
+
+    for (let pageIdx = 0; pageIdx < longTermPages; pageIdx++) {
+      const start = pageIdx * TRANSACTIONS_PER_PAGE;
+      const end = Math.min(start + TRANSACTIONS_PER_PAGE, report.longTerm.length);
+      const pageEntries = report.longTerm.slice(start, end);
+
+      // Load fresh template for each page
+      const pagePdf = await PDFDocument.load(templateBytes);
+      const form = pagePdf.getForm();
+
+      // Fill Part II (page 1)
+      fillPartIIPage(form, pageEntries, report.longTermSummary, pageIdx === longTermPages - 1);
+
+      form.flatten();
+
+      // Copy Part II page to merged PDF
+      const [copiedPage] = await mergedPdf.copyPages(pagePdf, [1]);
+      mergedPdf.addPage(copiedPage);
+    }
   }
 
-  form.flatten();
-  const pdfBytes = await pdfDoc.save();
+  const pdfBytes = await mergedPdf.save();
   const pdf = new Blob([pdfBytes], { type: 'application/pdf' });
 
   return {
@@ -157,81 +179,125 @@ async function generateDetailedMode(
   };
 }
 
-async function fillDetailedPart(
-  pdfDoc: any,
+/**
+ * Fill Part I (Short-Term) page with up to 14 transactions
+ */
+function fillPartIPage(
   form: any,
   entries: Form8949Entry[],
   summary: any,
-  partName: string,
-  fieldPrefix: string,
-  checkboxName: string
-): Promise<void> {
-  const pageNum = partName === 'Part1' ? 0 : 1;
-  const pages = Math.ceil(entries.length / TRANSACTIONS_PER_PAGE);
+  isLastPage: boolean
+): void {
+  // Check Box A
+  const checkbox = form.getCheckBox('topmostSubform[0].Page1[0].c1_1[0]');
+  checkbox.check();
 
-  for (let pageIdx = 0; pageIdx < pages; pageIdx++) {
-    const start = pageIdx * TRANSACTIONS_PER_PAGE;
-    const end = Math.min(start + TRANSACTIONS_PER_PAGE, entries.length);
-    const pageEntries = entries.slice(start, end);
+  // Fill rows (up to 14)
+  for (let i = 0; i < entries.length && i < TRANSACTIONS_PER_PAGE; i++) {
+    const entry = entries[i];
+    const row = i + 1;
+    const baseIdx = (row - 1) * 8 + 3;
 
-    // Check box on first page only
-    if (pageIdx === 0) {
-      const checkbox = form.getCheckBox(`topmostSubform[0].Page${pageNum + 1}[0].${checkboxName}[0]`);
-      checkbox.check();
+    try {
+      // Description
+      const desc = form.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${row}[0].f1_${pad(baseIdx)}[0]`);
+      desc.setText(truncate(entry.description, 100));
+
+      // Date Acquired
+      const dateAcq = form.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${row}[0].f1_${pad(baseIdx + 1)}[0]`);
+      dateAcq.setText(entry.dateAcquired);
+
+      // Date Sold
+      const dateSold = form.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${row}[0].f1_${pad(baseIdx + 2)}[0]`);
+      dateSold.setText(entry.dateSold);
+
+      // Proceeds
+      const proceeds = form.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${row}[0].f1_${pad(baseIdx + 3)}[0]`);
+      proceeds.setText(formatCurrency(entry.proceeds));
+
+      // Cost Basis
+      const cost = form.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${row}[0].f1_${pad(baseIdx + 4)}[0]`);
+      cost.setText(formatCurrency(entry.costBasis));
+
+      // Gain/Loss
+      const gain = form.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${row}[0].f1_${pad(baseIdx + 7)}[0]`);
+      gain.setText(formatCurrency(entry.gainLoss));
+    } catch (error) {
+      console.error(`Error filling Part I row ${row}:`, error);
     }
+  }
 
-    // Fill rows
-    for (let i = 0; i < pageEntries.length; i++) {
-      const entry = pageEntries[i];
-      const row = i + 1;
-      const baseIdx = (row - 1) * 8 + 3;
+  // Fill totals only on last page
+  if (isLastPage) {
+    const totalProceeds = form.getTextField('topmostSubform[0].Page1[0].f1_91[0]');
+    totalProceeds.setText(formatCurrency(summary.totalProceeds));
 
-      try {
-        // Description
-        const desc = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].Table_Line1_${partName}[0].Row${row}[0].${fieldPrefix}_${pad(baseIdx)}[0]`);
-        desc.setText(truncate(entry.description, 100));
+    const totalCost = form.getTextField('topmostSubform[0].Page1[0].f1_92[0]');
+    totalCost.setText(formatCurrency(summary.totalCostBasis));
 
-        // Date Acquired
-        const dateAcq = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].Table_Line1_${partName}[0].Row${row}[0].${fieldPrefix}_${pad(baseIdx + 1)}[0]`);
-        dateAcq.setText(entry.dateAcquired);
+    const totalGain = form.getTextField('topmostSubform[0].Page1[0].f1_94[0]');
+    totalGain.setText(formatCurrency(summary.totalGainLoss));
+  }
+}
 
-        // Date Sold
-        const dateSold = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].Table_Line1_${partName}[0].Row${row}[0].${fieldPrefix}_${pad(baseIdx + 2)}[0]`);
-        dateSold.setText(entry.dateSold);
+/**
+ * Fill Part II (Long-Term) page with up to 14 transactions
+ */
+function fillPartIIPage(
+  form: any,
+  entries: Form8949Entry[],
+  summary: any,
+  isLastPage: boolean
+): void {
+  // Check Box D
+  const checkbox = form.getCheckBox('topmostSubform[0].Page2[0].c2_1[0]');
+  checkbox.check();
 
-        // Proceeds
-        const proceeds = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].Table_Line1_${partName}[0].Row${row}[0].${fieldPrefix}_${pad(baseIdx + 3)}[0]`);
-        proceeds.setText(formatCurrency(entry.proceeds));
+  // Fill rows (up to 14)
+  for (let i = 0; i < entries.length && i < TRANSACTIONS_PER_PAGE; i++) {
+    const entry = entries[i];
+    const row = i + 1;
+    const baseIdx = (row - 1) * 8 + 3;
 
-        // Cost Basis
-        const cost = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].Table_Line1_${partName}[0].Row${row}[0].${fieldPrefix}_${pad(baseIdx + 4)}[0]`);
-        cost.setText(formatCurrency(entry.costBasis));
+    try {
+      // Description
+      const desc = form.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${row}[0].f2_${pad(baseIdx)}[0]`);
+      desc.setText(truncate(entry.description, 100));
 
-        // Gain/Loss
-        const gain = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].Table_Line1_${partName}[0].Row${row}[0].${fieldPrefix}_${pad(baseIdx + 7)}[0]`);
-        gain.setText(formatCurrency(entry.gainLoss));
-      } catch (error) {
-        console.error(`Error filling row ${row}:`, error);
-      }
+      // Date Acquired
+      const dateAcq = form.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${row}[0].f2_${pad(baseIdx + 1)}[0]`);
+      dateAcq.setText(entry.dateAcquired);
+
+      // Date Sold
+      const dateSold = form.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${row}[0].f2_${pad(baseIdx + 2)}[0]`);
+      dateSold.setText(entry.dateSold);
+
+      // Proceeds
+      const proceeds = form.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${row}[0].f2_${pad(baseIdx + 3)}[0]`);
+      proceeds.setText(formatCurrency(entry.proceeds));
+
+      // Cost Basis
+      const cost = form.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${row}[0].f2_${pad(baseIdx + 4)}[0]`);
+      cost.setText(formatCurrency(entry.costBasis));
+
+      // Gain/Loss
+      const gain = form.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${row}[0].f2_${pad(baseIdx + 7)}[0]`);
+      gain.setText(formatCurrency(entry.gainLoss));
+    } catch (error) {
+      console.error(`Error filling Part II row ${row}:`, error);
     }
+  }
 
-    // Fill totals on last page
-    if (pageIdx === pages - 1) {
-      const totalProceeds = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].${fieldPrefix}_91[0]`);
-      totalProceeds.setText(formatCurrency(summary.totalProceeds));
+  // Fill totals only on last page
+  if (isLastPage) {
+    const totalProceeds = form.getTextField('topmostSubform[0].Page2[0].f2_91[0]');
+    totalProceeds.setText(formatCurrency(summary.totalProceeds));
 
-      const totalCost = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].${fieldPrefix}_92[0]`);
-      totalCost.setText(formatCurrency(summary.totalCostBasis));
+    const totalCost = form.getTextField('topmostSubform[0].Page2[0].f2_92[0]');
+    totalCost.setText(formatCurrency(summary.totalCostBasis));
 
-      const totalGain = form.getTextField(`topmostSubform[0].Page${pageNum + 1}[0].${fieldPrefix}_94[0]`);
-      totalGain.setText(formatCurrency(summary.totalGainLoss));
-    }
-
-    // Add blank page for next set of transactions
-    if (pageIdx < pages - 1) {
-      const [newPage] = await pdfDoc.copyPages(pdfDoc, [pageNum]);
-      pdfDoc.addPage(newPage);
-    }
+    const totalGain = form.getTextField('topmostSubform[0].Page2[0].f2_94[0]');
+    totalGain.setText(formatCurrency(summary.totalGainLoss));
   }
 }
 
