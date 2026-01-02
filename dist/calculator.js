@@ -92,7 +92,7 @@ function matchSellToBuys(inventory, key, trade) {
         const gainLoss = proceeds - costBasis;
         const holdingDays = Math.floor((trade.timestamp - lot.acquisitionDate) / 86400);
         entries.push({
-            description: `Prediction market contract - ${trade.outcome} - ${truncate(trade.title, 50)}`,
+            description: `${trade.outcome.toUpperCase()} token - ${truncate(trade.title, 85)}`,
             dateAcquired: formatDate(lot.acquisitionDate),
             dateSold: formatDate(trade.timestamp),
             proceeds: round(proceeds),
@@ -111,7 +111,7 @@ function matchSellToBuys(inventory, key, trade) {
     if (remaining > 0.0001) {
         const proceeds = remaining * proceedsPerToken;
         entries.push({
-            description: `Prediction market contract - ${trade.outcome} - ${truncate(trade.title, 50)} [NO COST BASIS]`,
+            description: `${trade.outcome.toUpperCase()} token - ${truncate(trade.title, 68)} [NO COST BASIS]`,
             dateAcquired: 'VARIOUS',
             dateSold: formatDate(trade.timestamp),
             proceeds: round(proceeds),
@@ -162,7 +162,7 @@ async function processWorthlessPositions(positions, taxYearEnd) {
             for (const lot of position.lots) {
                 const holdingDays = Math.floor((taxYearEnd - lot.acquisitionDate) / 86400);
                 entries.push({
-                    description: `Prediction market contract - ${position.outcome} - ${truncate(position.title, 50)} [WORTHLESS]`,
+                    description: `${position.outcome.toUpperCase()} token - ${truncate(position.title, 73)} [WORTHLESS]`,
                     dateAcquired: formatDate(lot.acquisitionDate),
                     dateSold: formatDate(taxYearEnd),
                     proceeds: 0,
@@ -192,10 +192,20 @@ function formatDate(timestamp) {
     const year = date.getFullYear();
     return `${month}/${day}/${year}`;
 }
+/**
+ * Smart truncate that avoids cutting mid-word
+ */
 function truncate(str, maxLen) {
     if (!str || str.length <= maxLen)
         return str;
-    return str.substring(0, maxLen - 3) + '...';
+    // Cut at maxLen-3 to leave room for "..."
+    let cutPoint = maxLen - 3;
+    // Find last space before cutPoint to avoid cutting mid-word
+    const lastSpace = str.substring(0, cutPoint).lastIndexOf(' ');
+    if (lastSpace > maxLen * 0.5) { // Only use space if it's not too early (50%+ through)
+        cutPoint = lastSpace;
+    }
+    return str.substring(0, cutPoint).trim() + '...';
 }
 function round(num, decimals = 2) {
     return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
