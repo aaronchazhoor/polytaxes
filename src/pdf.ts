@@ -97,14 +97,14 @@ async function generateSummaryMode(
   const pdfBytes = await pdfDoc.save();
   const summaryPdf = new Blob([pdfBytes], { type: 'application/pdf' });
 
-  // Generate detailed statement
-  const statementPdf = await generateStatement(report, options, PDFDocument, StandardFonts);
+  // Generate detailed CSV statement
+  const statementCsv = generateStatementCSV(report, options);
 
   return {
-    files: [summaryPdf, statementPdf],
+    files: [summaryPdf, statementCsv],
     filenames: [
       `Form_8949_${options.taxYear}_Summary.pdf`,
-      `Form_8949_${options.taxYear}_Statement.pdf`
+      `Form_8949_${options.taxYear}_Transactions.csv`
     ]
   };
 }
@@ -363,6 +363,113 @@ async function generateStatement(
 
   const pdfBytes = await pdfDoc.save();
   return new Blob([pdfBytes], { type: 'application/pdf' });
+}
+
+/**
+ * Generate CSV statement with all transaction details
+ */
+function generateStatementCSV(
+  report: TaxReport,
+  options: PDFGenerationOptions
+): Blob {
+  // CSV Header
+  const headers = [
+    'Type',
+    'Description',
+    'Date Acquired',
+    'Date Sold',
+    'Proceeds',
+    'Cost Basis',
+    'Gain/Loss',
+    'Holding Days',
+    'Term'
+  ];
+
+  const rows: string[][] = [headers];
+
+  // Add short-term transactions
+  for (const entry of report.shortTerm) {
+    rows.push([
+      'Short-Term',
+      escapeCsvField(entry.description),
+      entry.dateAcquired,
+      entry.dateSold,
+      entry.proceeds.toFixed(2),
+      entry.costBasis.toFixed(2),
+      entry.gainLoss.toFixed(2),
+      entry.holdingDays.toString(),
+      entry.isLongTerm ? 'Long-Term' : 'Short-Term'
+    ]);
+  }
+
+  // Add long-term transactions
+  for (const entry of report.longTerm) {
+    rows.push([
+      'Long-Term',
+      escapeCsvField(entry.description),
+      entry.dateAcquired,
+      entry.dateSold,
+      entry.proceeds.toFixed(2),
+      entry.costBasis.toFixed(2),
+      entry.gainLoss.toFixed(2),
+      entry.holdingDays.toString(),
+      entry.isLongTerm ? 'Long-Term' : 'Short-Term'
+    ]);
+  }
+
+  // Add summary rows
+  rows.push([]);
+  rows.push(['SUMMARY', '', '', '', '', '', '', '', '']);
+  rows.push([]);
+  rows.push([
+    'Short-Term Total',
+    `${report.shortTerm.length} transactions`,
+    '',
+    '',
+    report.shortTermSummary.totalProceeds.toFixed(2),
+    report.shortTermSummary.totalCostBasis.toFixed(2),
+    report.shortTermSummary.totalGainLoss.toFixed(2),
+    '',
+    ''
+  ]);
+  rows.push([
+    'Long-Term Total',
+    `${report.longTerm.length} transactions`,
+    '',
+    '',
+    report.longTermSummary.totalProceeds.toFixed(2),
+    report.longTermSummary.totalCostBasis.toFixed(2),
+    report.longTermSummary.totalGainLoss.toFixed(2),
+    '',
+    ''
+  ]);
+  rows.push([]);
+  rows.push([
+    'GRAND TOTAL',
+    `${report.totalTransactions} transactions`,
+    '',
+    '',
+    (report.shortTermSummary.totalProceeds + report.longTermSummary.totalProceeds).toFixed(2),
+    (report.shortTermSummary.totalCostBasis + report.longTermSummary.totalCostBasis).toFixed(2),
+    report.totalGainLoss.toFixed(2),
+    '',
+    ''
+  ]);
+
+  // Convert to CSV string
+  const csvContent = rows.map(row => row.join(',')).join('\n');
+
+  return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+}
+
+/**
+ * Escape CSV field if it contains special characters
+ */
+function escapeCsvField(field: string): string {
+  if (field.includes(',') || field.includes('"') || field.includes('\n')) {
+    return `"${field.replace(/"/g, '""')}"`;
+  }
+  return field;
 }
 
 async function loadTemplate(): Promise<ArrayBuffer> {
