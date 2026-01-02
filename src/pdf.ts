@@ -45,7 +45,7 @@ async function generateSummaryMode(
     checkbox.check();
 
     const desc = form.getTextField('topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row1[0].f1_03[0]');
-    desc.setText(`Prediction market contracts - ${report.shortTerm.length} transactions (see attached)`);
+    desc.setText(`Various prediction market tokens - ${report.shortTerm.length} transactions`);
 
     const proceeds = form.getTextField('topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row1[0].f1_06[0]');
     proceeds.setText(formatCurrency(report.shortTermSummary.totalProceeds));
@@ -72,7 +72,7 @@ async function generateSummaryMode(
     checkbox.check();
 
     const desc = form.getTextField('topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row1[0].f2_03[0]');
-    desc.setText(`Prediction market contracts - ${report.longTerm.length} transactions (see attached)`);
+    desc.setText(`Various prediction market tokens - ${report.longTerm.length} transactions`);
 
     const proceeds = form.getTextField('topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row1[0].f2_06[0]');
     proceeds.setText(formatCurrency(report.longTermSummary.totalProceeds));
