@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymarket Tax Form Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Polymarket Tax Form Generator</h1>
+            <p>Generate IRS Form 8949 from your prediction market trades</p>
+        </header>
+
+        <div class="disclaimer">
+            <strong>⚠️ Important:</strong> This tool is for informational purposes only.
+            Consult a tax professional before filing. All calculations use FIFO cost basis.
+            <br><strong>🔒 Privacy:</strong> All processing happens in your browser. No data is sent to any server.
+        </div>
+
+        <main>
+            <form id="tax-form">
+                <div class="form-group">
+                    <label for="wallet-input">Wallet Address or Polymarket Profile URL</label>
+                    <input type="text" id="wallet-input" placeholder="0x... or https://polymarket.com/profile/..." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tax-year">Tax Year</label>
+                    <select id="tax-year" required>
+                        <option value="2026">2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary">Generate Tax Report</button>
+            </form>
+
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p id="status-message">Processing...</p>
+            </div>
+
+            <div id="error-message" class="error hidden"></div>
+            <div id="success-message" class="success hidden"></div>
+
+            <section id="summary-section" class="hidden">
+                <h2>Summary</h2>
+                <div class="summary-grid">
+                    <div class="card">
+                        <h3>Total Transactions</h3>
+                        <p id="total-trades" class="value">0</p>
+                    </div>
+                    <div class="card">
+                        <h3>Short-Term</h3>
+                        <p id="short-term-count" class="value">0</p>
+                        <small id="short-term-total">$0.00</small>
+                    </div>
+                    <div class="card">
+                        <h3>Long-Term</h3>
+                        <p id="long-term-count" class="value">0</p>
+                        <small id="long-term-total">$0.00</small>
+                    </div>
+                    <div class="card highlight">
+                        <h3>Net Gain/Loss</h3>
+                        <p id="total-gain-loss" class="value">$0.00</p>
+                    </div>
+                </div>
+
+                <div class="mode-selector">
+                    <label>
+                        <input type="radio" name="mode" value="summary" checked>
+                        Summary Mode (recommended for many transactions)
+                    </label>
+                    <label>
+                        <input type="radio" name="mode" value="detailed">
+                        Detailed Mode (all transactions on Form 8949)
+                    </label>
+                </div>
+
+                <button id="download-btn" class="btn-primary">Download PDF</button>
+            </section>
+        </main>
+
+        <footer>
+            <p>
+                <a href="https://www.irs.gov/instructions/i8949" target="_blank">IRS Form 8949 Instructions</a> |
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </p>
+            <p class="small">100% client-side processing • No data stored or transmitted</p>
+        </footer>
+    </div>
+
+    <!-- PDF Library -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+    <!-- Application -->
+    <script type="module" src="../dist/main.js"></script>
+</body>
+</html>

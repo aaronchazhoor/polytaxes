@@ -1,0 +1,22 @@
+{
+  "name": "polymarket-tax-form-generator",
+  "version": "1.0.0",
+  "description": "Generate IRS Form 8949 for Polymarket trades (100% client-side)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": ["polymarket", "taxes", "form-8949", "irs", "crypto"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@types/node": "^20.11.0",
+    "pdf-lib": "^1.17.1"
+  }
+}
