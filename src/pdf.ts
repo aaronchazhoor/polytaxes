@@ -300,9 +300,9 @@ async function generateStatement(
 }
 
 async function loadTemplate(): Promise<ArrayBuffer> {
-  const response = await fetch('IRS_Form_8949.pdf');
+  const response = await fetch('public/IRS_Form_8949.pdf');
   if (!response.ok) {
-    throw new Error('IRS Form 8949 template not found. Please place IRS_Form_8949.pdf in the same directory.');
+    throw new Error('IRS Form 8949 template not found. Please place IRS_Form_8949.pdf in the public/ directory.');
   }
   return await response.arrayBuffer();
 }

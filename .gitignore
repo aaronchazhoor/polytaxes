@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output (commented out for GitHub Pages - we need the compiled JS)
+# dist/
 
 # Logs
 *.log
