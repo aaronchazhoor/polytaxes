@@ -378,17 +378,49 @@ function truncate(str, maxLen) {
     return str.substring(0, maxLen - 3) + '...';
 }
 export function downloadPDFs(files, filenames) {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     files.forEach((file, idx) => {
         setTimeout(() => {
             const url = URL.createObjectURL(file);
             const link = document.createElement('a');
             link.href = url;
             link.download = filenames[idx];
+            // For mobile: add target blank and rel attributes for better compatibility
+            if (isMobile) {
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+            }
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            // Show mobile-specific instruction if PDF opens in viewer
+            if (isMobile && idx === 0) {
+                setTimeout(() => {
+                    showMobileDownloadTip();
+                }, 500);
+            }
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }, idx * 1500);
     });
+}
+function showMobileDownloadTip() {
+    const existingTip = document.getElementById('mobile-download-tip');
+    if (existingTip)
+        return; // Don't show multiple times
+    const tip = document.createElement('div');
+    tip.id = 'mobile-download-tip';
+    tip.className = 'fixed bottom-4 left-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50 text-sm';
+    tip.innerHTML = `
+    <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-white text-xl font-bold">&times;</button>
+    <p class="font-semibold mb-1">📱 Mobile Tip:</p>
+    <p>If the PDF opened in a viewer, tap the <strong>Share</strong> button, then choose <strong>Save to Files</strong> or <strong>Download</strong>.</p>
+  `;
+    document.body.appendChild(tip);
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+        tip.style.transition = 'opacity 0.5s';
+        tip.style.opacity = '0';
+        setTimeout(() => tip.remove(), 500);
+    }, 8000);
 }
 //# sourceMappingURL=pdf.js.map
