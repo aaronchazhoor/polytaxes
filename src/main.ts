@@ -73,6 +73,9 @@ async function handleDownload(): Promise<void> {
 
     downloadPDFs(files, filenames);
 
+    // Track form generation event in Vercel Analytics
+    trackFormGeneration(mode, taxYear, currentReport.totalTransactions);
+
     // Show accurate success message based on mode
     const message = mode === 'summary'
       ? 'Generated PDF and CSV successfully! Check your downloads.'
@@ -137,4 +140,17 @@ function formatCurrency(amount: number): string {
     style: 'currency',
     currency: 'USD'
   }).format(amount);
+}
+
+// Track custom events in Vercel Analytics
+function trackFormGeneration(mode: string, taxYear: number, transactionCount: number): void {
+  // @ts-ignore - va is injected by Vercel Analytics script
+  if (typeof window.va !== 'undefined') {
+    // @ts-ignore
+    window.va('track', 'Form Generated', {
+      mode,
+      taxYear,
+      transactionCount
+    });
+  }
 }

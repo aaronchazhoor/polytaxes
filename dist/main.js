@@ -56,6 +56,8 @@ async function handleDownload() {
         updateStatus('Generating files...');
         const { files, filenames } = await generateForm8949(currentReport, { taxYear, mode });
         downloadPDFs(files, filenames);
+        // Track form generation event in Vercel Analytics
+        trackFormGeneration(mode, taxYear, currentReport.totalTransactions);
         // Show accurate success message based on mode
         const message = mode === 'summary'
             ? 'Generated PDF and CSV successfully! Check your downloads.'
@@ -113,5 +115,17 @@ function formatCurrency(amount) {
         style: 'currency',
         currency: 'USD'
     }).format(amount);
+}
+// Track custom events in Vercel Analytics
+function trackFormGeneration(mode, taxYear, transactionCount) {
+    // @ts-ignore - va is injected by Vercel Analytics script
+    if (typeof window.va !== 'undefined') {
+        // @ts-ignore
+        window.va('track', 'Form Generated', {
+            mode,
+            taxYear,
+            transactionCount
+        });
+    }
 }
 //# sourceMappingURL=main.js.map
