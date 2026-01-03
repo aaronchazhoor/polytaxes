@@ -121,10 +121,13 @@ function trackFormGeneration(mode, taxYear, transactionCount) {
     // @ts-ignore - va is injected by Vercel Analytics script
     if (typeof window.va !== 'undefined') {
         // @ts-ignore
-        window.va('track', 'Form Generated', {
-            mode,
-            taxYear,
-            transactionCount
+        window.va('event', {
+            name: 'Form Generated',
+            data: {
+                mode,
+                taxYear,
+                transactionCount
+            }
         });
     }
 }
