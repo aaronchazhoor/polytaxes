@@ -4,34 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Polymarket Tax Form Generator</title>
-    <link rel="stylesheet" href="public/styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        polymarket: '#5b21b6',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>Polymarket Tax Form Generator</h1>
-            <p>Generate IRS Form 8949 from your prediction market trades</p>
+<body class="bg-gradient-to-br from-purple-50 via-white to-blue-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6 sm:py-12 max-w-4xl">
+        <!-- Header -->
+        <header class="text-center mb-8 sm:mb-12">
+            <div class="inline-block mb-4">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 sm:mb-3">
+                Polymarket Tax Generator
+            </h1>
+            <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
+                Generate IRS Form 8949 from your prediction market trades
+            </p>
         </header>
 
-        <div class="disclaimer">
-            <strong>⚠️ Important:</strong> This tool is for informational purposes only.
-            Consult a tax professional before filing. All calculations use FIFO cost basis.
-            <br><strong>🔒 Privacy:</strong> All processing happens in your browser. No data is sent to any server.
+        <!-- Disclaimer Banner -->
+        <div class="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-4 sm:p-5 mb-6 sm:mb-8 shadow-sm">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-shrink-0">
+                    <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 text-sm sm:text-base">
+                    <p class="font-semibold text-amber-800 mb-1">Important Disclaimer</p>
+                    <p class="text-amber-700">
+                        This tool is for informational purposes only. Consult a tax professional before filing. All calculations use FIFO cost basis.
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <main>
-            <form id="tax-form">
-                <div class="form-group">
-                    <label for="wallet-input">Ethereum Wallet Address</label>
-                    <input type="text" id="wallet-input" placeholder="0x1234567890abcdef..." required>
-                    <small style="color: #666; display: block; margin-top: 4px;">
-                        Go to your <a href="https://polymarket.com" target="_blank" style="color: #0066cc;">Polymarket profile</a>, click "Copy Address"
-                    </small>
+        <!-- Privacy Notice -->
+        <div class="bg-purple-50 border-l-4 border-purple-600 rounded-lg p-4 sm:p-5 mb-6 sm:mb-8 shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/>
+                </svg>
+                <div class="text-sm sm:text-base">
+                    <p class="font-semibold text-purple-800 mb-1">100% Private & Secure</p>
+                    <p class="text-purple-700">
+                        All processing happens in your browser. No data is sent to any server or stored anywhere.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6 sm:mb-8">
+            <form id="tax-form" class="space-y-6">
+                <!-- Wallet Address Input -->
+                <div>
+                    <label for="wallet-input" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Ethereum Wallet Address
+                    </label>
+                    <input
+                        type="text"
+                        id="wallet-input"
+                        placeholder="0x1234567890abcdef..."
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-sm sm:text-base"
+                    >
+                    <p class="mt-2 text-sm text-gray-600">
+                        Go to your <a href="https://polymarket.com" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium underline">Polymarket profile</a> and click "Copy Address"
+                    </p>
                 </div>
 
-                <div class="form-group">
-                    <label for="tax-year">Tax Year</label>
-                    <select id="tax-year" required>
+                <!-- Tax Year Select -->
+                <div>
+                    <label for="tax-year" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Tax Year
+                    </label>
+                    <select
+                        id="tax-year"
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 text-sm sm:text-base bg-white"
+                    >
                         <option value="2026">2026</option>
                         <option value="2025">2025</option>
                         <option value="2024">2024</option>
@@ -39,61 +105,128 @@
                     </select>
                 </div>
 
-                <button type="submit" class="btn-primary">Generate Tax Report</button>
+                <!-- Submit Button -->
+                <button
+                    type="submit"
+                    class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition duration-200 text-sm sm:text-base"
+                >
+                    Generate Tax Report
+                </button>
             </form>
+        </div>
 
-            <div id="loading" class="hidden">
-                <div class="spinner"></div>
-                <p id="status-message">Processing...</p>
+        <!-- Loading State -->
+        <div id="loading" class="hidden bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center">
+            <div class="flex flex-col items-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mb-4"></div>
+                <p id="status-message" class="text-gray-600 font-medium text-sm sm:text-base">Processing...</p>
             </div>
+        </div>
 
-            <div id="error-message" class="error hidden"></div>
-            <div id="success-message" class="success hidden"></div>
+        <!-- Error Message -->
+        <div id="error-message" class="hidden bg-red-50 border-l-4 border-red-500 rounded-lg p-4 sm:p-5 mb-6 shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>
+                </svg>
+                <p class="text-red-800 text-sm sm:text-base"></p>
+            </div>
+        </div>
 
-            <section id="summary-section" class="hidden">
-                <h2>Summary</h2>
-                <div class="summary-grid">
-                    <div class="card">
-                        <h3>Total Transactions</h3>
-                        <p id="total-trades" class="value">0</p>
+        <!-- Success Message -->
+        <div id="success-message" class="hidden bg-green-50 border-l-4 border-green-500 rounded-lg p-4 sm:p-5 mb-6 shadow-sm">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                </svg>
+                <p class="text-green-800 text-sm sm:text-base"></p>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <section id="summary-section" class="hidden">
+            <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">Tax Summary</h2>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                    <!-- Total Transactions -->
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6 border border-gray-200">
+                        <p class="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Total Transactions</p>
+                        <p id="total-trades" class="text-2xl sm:text-3xl font-bold text-gray-900">0</p>
                     </div>
-                    <div class="card">
-                        <h3>Short-Term</h3>
-                        <p id="short-term-count" class="value">0</p>
-                        <small id="short-term-total">$0.00</small>
+
+                    <!-- Short-Term -->
+                    <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 sm:p-6 border border-orange-200">
+                        <p class="text-xs sm:text-sm font-semibold text-orange-700 uppercase tracking-wide mb-2">Short-Term</p>
+                        <p id="short-term-count" class="text-2xl sm:text-3xl font-bold text-orange-900">0</p>
+                        <p id="short-term-total" class="text-xs sm:text-sm text-orange-700 mt-1">$0.00</p>
                     </div>
-                    <div class="card">
-                        <h3>Long-Term</h3>
-                        <p id="long-term-count" class="value">0</p>
-                        <small id="long-term-total">$0.00</small>
+
+                    <!-- Long-Term -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6 border border-blue-200">
+                        <p class="text-xs sm:text-sm font-semibold text-blue-700 uppercase tracking-wide mb-2">Long-Term</p>
+                        <p id="long-term-count" class="text-2xl sm:text-3xl font-bold text-blue-900">0</p>
+                        <p id="long-term-total" class="text-xs sm:text-sm text-blue-700 mt-1">$0.00</p>
                     </div>
-                    <div class="card highlight">
-                        <h3>Net Gain/Loss</h3>
-                        <p id="total-gain-loss" class="value">$0.00</p>
+
+                    <!-- Net Gain/Loss -->
+                    <div class="bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl p-4 sm:p-6 border-2 border-purple-400">
+                        <p class="text-xs sm:text-sm font-semibold text-purple-800 uppercase tracking-wide mb-2">Net Gain/Loss</p>
+                        <p id="total-gain-loss" class="text-2xl sm:text-3xl font-bold text-purple-900">$0.00</p>
                     </div>
                 </div>
 
-                <div class="mode-selector">
-                    <label>
-                        <input type="radio" name="mode" value="summary" checked>
-                        Summary Mode (recommended for many transactions)
-                    </label>
-                    <label>
-                        <input type="radio" name="mode" value="detailed">
-                        Detailed Mode (all transactions on Form 8949)
-                    </label>
+                <!-- Mode Selector -->
+                <div class="bg-gray-50 rounded-xl p-4 sm:p-6 mb-6">
+                    <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-4">Report Format</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-start gap-3 p-3 sm:p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-purple-400 cursor-pointer transition duration-200">
+                            <input type="radio" name="mode" value="summary" checked class="mt-1 text-purple-600 focus:ring-purple-500">
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-900 text-sm sm:text-base">Summary Mode</p>
+                                <p class="text-xs sm:text-sm text-gray-600 mt-1">Recommended for many transactions. Includes CSV with all details.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start gap-3 p-3 sm:p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-purple-400 cursor-pointer transition duration-200">
+                            <input type="radio" name="mode" value="detailed" class="mt-1 text-purple-600 focus:ring-purple-500">
+                            <div class="flex-1">
+                                <p class="font-semibold text-gray-900 text-sm sm:text-base">Detailed Mode</p>
+                                <p class="text-xs sm:text-sm text-gray-600 mt-1">All transactions printed on Form 8949 (14 per page).</p>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
-                <button id="download-btn" class="btn-primary">Download PDF</button>
-            </section>
-        </main>
+                <!-- Download Button -->
+                <button
+                    id="download-btn"
+                    class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 sm:py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition duration-200 text-sm sm:text-base"
+                >
+                    <span class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Download Tax Forms
+                    </span>
+                </button>
+            </div>
+        </section>
 
-        <footer>
-            <p>
-                <a href="https://www.irs.gov/instructions/i8949" target="_blank">IRS Form 8949 Instructions</a> |
-                <a href="https://github.com" target="_blank">GitHub</a>
+        <!-- Footer -->
+        <footer class="text-center mt-12 pb-8">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-sm text-gray-600 mb-4">
+                <a href="https://www.irs.gov/instructions/i8949" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium hover:underline">
+                    IRS Form 8949 Instructions
+                </a>
+                <span class="hidden sm:inline text-gray-400">•</span>
+                <a href="https://github.com" target="_blank" class="text-purple-600 hover:text-purple-700 font-medium hover:underline">
+                    View on GitHub
+                </a>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-500">
+                100% client-side processing • No data stored or transmitted
             </p>
-            <p class="small">100% client-side processing • No data stored or transmitted</p>
         </footer>
     </div>
 
