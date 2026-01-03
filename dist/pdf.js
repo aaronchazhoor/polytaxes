@@ -407,20 +407,63 @@ function showMobileDownloadTip() {
     const existingTip = document.getElementById('mobile-download-tip');
     if (existingTip)
         return; // Don't show multiple times
-    const tip = document.createElement('div');
-    tip.id = 'mobile-download-tip';
-    tip.className = 'fixed bottom-4 left-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50 text-sm';
-    tip.innerHTML = `
-    <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-white text-xl font-bold">&times;</button>
-    <p class="font-semibold mb-1">📱 Mobile Tip:</p>
-    <p>If the PDF opened in a viewer, tap the <strong>Share</strong> button, then choose <strong>Save to Files</strong> or <strong>Download</strong>.</p>
+    const snackbar = document.createElement('div');
+    snackbar.id = 'mobile-download-tip';
+    snackbar.className = 'fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe';
+    snackbar.style.animation = 'slideUp 0.3s ease-out';
+    snackbar.innerHTML = `
+    <style>
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideDown {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+      }
+    </style>
+    <div class="mx-auto max-w-md mb-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl shadow-2xl p-4 flex items-start gap-3">
+      <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div class="flex-1">
+        <p class="font-semibold text-sm mb-1">To save your PDF:</p>
+        <p class="text-xs opacity-90">Tap the <strong>Share</strong> button, then select <strong>Save to Files</strong></p>
+      </div>
+      <button onclick="this.closest('#mobile-download-tip').remove()" class="text-white opacity-75 hover:opacity-100 flex-shrink-0 ml-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
   `;
-    document.body.appendChild(tip);
-    // Auto-dismiss after 8 seconds
-    setTimeout(() => {
-        tip.style.transition = 'opacity 0.5s';
-        tip.style.opacity = '0';
-        setTimeout(() => tip.remove(), 500);
-    }, 8000);
+    // Tap anywhere to dismiss
+    snackbar.addEventListener('click', (e) => {
+        if (e.target === snackbar) {
+            dismissSnackbar();
+        }
+    });
+    document.body.appendChild(snackbar);
+    // Auto-dismiss after 6 seconds
+    const dismissTimer = setTimeout(() => {
+        dismissSnackbar();
+    }, 6000);
+    function dismissSnackbar() {
+        clearTimeout(dismissTimer);
+        snackbar.style.animation = 'slideDown 0.3s ease-in';
+        setTimeout(() => snackbar.remove(), 300);
+    }
 }
 //# sourceMappingURL=pdf.js.map
