@@ -1,129 +1,40 @@
-/**
- * Main application entry point
- * Coordinates UI interactions and workflow
- */
-import { extractWalletAddress, fetchTradingHistory } from './api.js';
-import { generateTaxReport } from './calculator.js';
-import { generateForm8949, downloadPDFs } from './pdf.js';
-import { inject, track } from '@vercel/analytics';
-let currentReport = null;
-// Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Polymarket Tax Form Generator initialized');
-    inject(); // Initialize Vercel Analytics
-    setupEventListeners();
-});
-function setupEventListeners() {
-    const form = document.getElementById('tax-form');
-    const downloadBtn = document.getElementById('download-btn');
-    form?.addEventListener('submit', handleSubmit);
-    downloadBtn?.addEventListener('click', handleDownload);
-}
-async function handleSubmit(e) {
-    e.preventDefault();
-    const walletInput = document.getElementById('wallet-input').value;
-    const taxYear = parseInt(document.getElementById('tax-year').value);
-    const wallet = extractWalletAddress(walletInput);
-    if (!wallet) {
-        showError('Invalid wallet address or Polymarket profile URL');
-        return;
-    }
-    try {
-        showLoading();
-        updateStatus('Fetching trading history...');
-        const trades = await fetchTradingHistory(wallet, taxYear, (msg) => updateStatus(msg));
-        if (trades.length === 0) {
-            showError(`No trades found for ${taxYear}`);
-            return;
+var K="https://data-api.polymarket.com",Q="https://clob.polymarket.com",X="https://corsproxy.io/?";async function $(t,e,o){let s=new Date(e,0,1).getTime()/1e3,a=new Date(e,11,31,23,59,59).getTime()/1e3,n=[],r=0,i=500;for(;;){o?.(`Fetching trades (${n.length} found)...`);let c=new URLSearchParams({user:t.toLowerCase(),limit:String(i),offset:String(r),start:String(Math.floor(s)),end:String(Math.floor(a)),sortBy:"TIMESTAMP",sortDirection:"ASC"}),l=`${K}/activity?${c}`,m=`${X}${encodeURIComponent(l)}`,g=await fetch(m);if(!g.ok)throw new Error(`API error: ${g.status}`);let u=await g.json(),f=Array.isArray(u)?u:u.activities||u.data||[],h=f.filter(x=>x.type==="TRADE"||x.type==="REDEEM");if(n.push(...h),f.length<i||(r+=i,r>5e4))break}return console.log(`Fetched ${n.length} trades`),await Z(n)}async function J(t){try{let e=`${Q}/markets/${t}`,o=await fetch(e);return o.ok?await o.json():null}catch(e){return console.error(`Error fetching market ${t}:`,e),null}}async function v(t){let e=[...new Set(t)],o=new Map,s=5;for(let a=0;a<e.length;a+=s){let n=e.slice(a,a+s),r=n.map(c=>J(c)),i=await Promise.all(r);n.forEach((c,l)=>{i[l]&&o.set(c,i[l])}),a+s<e.length&&await tt(500)}return o}async function Z(t){let e=t.filter(a=>a.type==="REDEEM"&&!a.outcome);if(e.length===0)return t;console.log(`Enriching ${e.length} REDEEM activities...`);let o=[...new Set(e.map(a=>a.conditionId))],s=await v(o);for(let a of t)if(a.type==="REDEEM"&&!a.outcome){let n=s.get(a.conditionId);if(n?.tokens){let r=n.tokens.find(i=>i.winner);r&&(a.outcome=r.outcome)}}return console.log(`Enriched ${e.length} REDEEMs`),t}function tt(t){return new Promise(e=>setTimeout(e,t))}function F(t){return/^0x[a-fA-F0-9]{40}$/.test(t.trim())}function R(t){let e=t.trim();if(F(e))return e.toLowerCase();let o=e.match(/polymarket\.com\/profile\/(0x[a-fA-F0-9]{40})/i);return o&&F(o[1])?o[1].toLowerCase():null}var C=365;async function A(t,e){let o=new Date(e,11,31,23,59,59).getTime()/1e3,s=[],a=[],n=new Map,r=t.map(et).filter(Boolean);r.sort((m,g)=>m.timestamp-g.timestamp);for(let m of r){let g=`${m.conditionId}-${m.outcome}`;if(m.side==="BUY")ot(n,g,m);else if(m.side==="SELL"){let{newEntries:u,warning:f}=nt(n,g,m);s.push(...u),f&&a.push(f)}}let i=st(n);if(i.length>0){let m=await at(i,o);s.push(...m)}let c=s.filter(m=>!m.isLongTerm),l=s.filter(m=>m.isLongTerm);return{shortTerm:c,longTerm:l,shortTermSummary:B(c),longTermSummary:B(l),totalTransactions:s.length,totalGainLoss:p(y(s,"gainLoss")),warnings:a,openPositions:i}}function et(t){return!t.conditionId||!t.outcome?null:t.type==="REDEEM"?{...t,side:"SELL",usdcSize:t.size*1,price:1}:{...t,price:t.price||t.usdcSize/t.size}}function ot(t,e,o){t.has(e)||t.set(e,[]),t.get(e).push({acquisitionDate:o.timestamp,quantity:o.size,costBasisPerToken:o.usdcSize/o.size,totalCostBasis:o.usdcSize,marketTitle:o.title,transactionHash:o.transactionHash,outcome:o.outcome})}function nt(t,e,o){let s=t.get(e)||[],a=[],n=o.size,r=o.usdcSize/o.size;for(;n>1e-4&&s.length>0;){let i=s[0],c=Math.min(n,i.quantity),l=c*r,m=c*i.costBasisPerToken,g=l-m,u=Math.floor((o.timestamp-i.acquisitionDate)/86400);a.push({description:`${o.outcome.toUpperCase()} token - ${E(o.title,55)}`,dateAcquired:P(i.acquisitionDate),dateSold:P(o.timestamp),proceeds:p(l),costBasis:p(m),gainLoss:p(g),isLongTerm:u>=C,holdingDays:u}),i.quantity-=c,n-=c,i.quantity<1e-4&&s.shift()}if(n>1e-4){let i=n*r;return a.push({description:`${o.outcome.toUpperCase()} token - ${E(o.title,55)}`,dateAcquired:"VARIOUS",dateSold:P(o.timestamp),proceeds:p(i),costBasis:0,gainLoss:p(i),isLongTerm:!1,holdingDays:0}),{newEntries:a,warning:`Sold ${n} more shares than owned for ${e}`}}return{newEntries:a}}function st(t){let e=[];for(let[o,s]of t.entries()){if(s.length===0)continue;let[a,...n]=o.split("-"),r=n.join("-");e.push({positionKey:o,conditionId:a,outcome:r,quantity:y(s,"quantity"),costBasis:y(s,"totalCostBasis"),lots:s,title:s[0].marketTitle})}return e}async function at(t,e){let o=t.map(n=>n.conditionId),s=await v(o),a=[];for(let n of t){let r=s.get(n.conditionId);if(!r?.closed)continue;let i=r.tokens.find(l=>l.winner);if(!i)continue;if(n.outcome.toUpperCase()!==i.outcome.toUpperCase())for(let l of n.lots){let m=Math.floor((e-l.acquisitionDate)/86400);a.push({description:`${n.outcome.toUpperCase()} token - ${E(n.title,55)}`,dateAcquired:P(l.acquisitionDate),dateSold:P(e),proceeds:0,costBasis:p(l.quantity*l.costBasisPerToken),gainLoss:-p(l.quantity*l.costBasisPerToken),isLongTerm:m>=C,holdingDays:m})}}return a}function B(t){return{count:t.length,totalProceeds:p(y(t,"proceeds")),totalCostBasis:p(y(t,"costBasis")),totalGainLoss:p(y(t,"gainLoss"))}}function P(t){let e=new Date(t*1e3),o=String(e.getMonth()+1).padStart(2,"0"),s=String(e.getDate()).padStart(2,"0"),a=e.getFullYear();return`${o}/${s}/${a}`}function E(t,e){if(!t||t.length<=e)return t;let o=e-3,s=t.substring(0,o).lastIndexOf(" ");return s>e*.5&&(o=s),t.substring(0,o).trim()+"..."}function p(t,e=2){return Math.round(t*Math.pow(10,e))/Math.pow(10,e)}function y(t,e){return t.reduce((o,s)=>o+(s[e]||0),0)}async function M(t,e){let{PDFDocument:o,StandardFonts:s}=window.PDFLib;return e.mode==="summary"?rt(t,e,o,s):it(t,e,o)}async function rt(t,e,o,s){let a=await D(),n=await o.load(a),r=n.getForm();t.shortTerm.length>0&&(r.getCheckBox("topmostSubform[0].Page1[0].c1_1[0]").check(),r.getTextField("topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row1[0].f1_03[0]").setText(`Various prediction market tokens - ${t.shortTerm.length} transactions`),r.getTextField("topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row1[0].f1_06[0]").setText(d(t.shortTermSummary.totalProceeds)),r.getTextField("topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row1[0].f1_07[0]").setText(d(t.shortTermSummary.totalCostBasis)),r.getTextField("topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row1[0].f1_10[0]").setText(d(t.shortTermSummary.totalGainLoss)),r.getTextField("topmostSubform[0].Page1[0].f1_91[0]").setText(d(t.shortTermSummary.totalProceeds)),r.getTextField("topmostSubform[0].Page1[0].f1_92[0]").setText(d(t.shortTermSummary.totalCostBasis)),r.getTextField("topmostSubform[0].Page1[0].f1_94[0]").setText(d(t.shortTermSummary.totalGainLoss))),t.longTerm.length>0&&(r.getCheckBox("topmostSubform[0].Page2[0].c2_1[0]").check(),r.getTextField("topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row1[0].f2_03[0]").setText(`Various prediction market tokens - ${t.longTerm.length} transactions`),r.getTextField("topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row1[0].f2_06[0]").setText(d(t.longTermSummary.totalProceeds)),r.getTextField("topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row1[0].f2_07[0]").setText(d(t.longTermSummary.totalCostBasis)),r.getTextField("topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row1[0].f2_10[0]").setText(d(t.longTermSummary.totalGainLoss)),r.getTextField("topmostSubform[0].Page2[0].f2_91[0]").setText(d(t.longTermSummary.totalProceeds)),r.getTextField("topmostSubform[0].Page2[0].f2_92[0]").setText(d(t.longTermSummary.totalCostBasis)),r.getTextField("topmostSubform[0].Page2[0].f2_94[0]").setText(d(t.longTermSummary.totalGainLoss))),r.flatten();let i=await n.save(),c=new Blob([i],{type:"application/pdf"}),l=mt(t,e);return{files:[c,l],filenames:[`Form_8949_${e.taxYear}_Summary.pdf`,`Form_8949_${e.taxYear}_Transactions.csv`]}}async function it(t,e,o){let s=await D(),a=await o.create();if(t.shortTerm.length>0){let i=Math.ceil(t.shortTerm.length/14);for(let c=0;c<i;c++){let l=c*14,m=Math.min(l+14,t.shortTerm.length),g=t.shortTerm.slice(l,m),u=await o.load(s),f=u.getForm();ct(f,g,t.shortTermSummary,c===i-1),f.flatten();let[h]=await a.copyPages(u,[0]);a.addPage(h)}}if(t.longTerm.length>0){let i=Math.ceil(t.longTerm.length/14);for(let c=0;c<i;c++){let l=c*14,m=Math.min(l+14,t.longTerm.length),g=t.longTerm.slice(l,m),u=await o.load(s),f=u.getForm();lt(f,g,t.longTermSummary,c===i-1),f.flatten();let[h]=await a.copyPages(u,[1]);a.addPage(h)}}let n=await a.save();return{files:[new Blob([n],{type:"application/pdf"})],filenames:[`Form_8949_${e.taxYear}_Detailed.pdf`]}}function ct(t,e,o,s){t.getCheckBox("topmostSubform[0].Page1[0].c1_1[0]").check();for(let n=0;n<e.length&&n<14;n++){let r=e[n],i=n+1,c=(i-1)*8+3;try{t.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${i}[0].f1_${T(c)}[0]`).setText(G(r.description,100)),t.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${i}[0].f1_${T(c+1)}[0]`).setText(r.dateAcquired),t.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${i}[0].f1_${T(c+2)}[0]`).setText(r.dateSold),t.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${i}[0].f1_${T(c+3)}[0]`).setText(d(r.proceeds)),t.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${i}[0].f1_${T(c+4)}[0]`).setText(d(r.costBasis)),t.getTextField(`topmostSubform[0].Page1[0].Table_Line1_Part1[0].Row${i}[0].f1_${T(c+7)}[0]`).setText(d(r.gainLoss))}catch(l){console.error(`Error filling Part I row ${i}:`,l)}}s&&(t.getTextField("topmostSubform[0].Page1[0].f1_91[0]").setText(d(o.totalProceeds)),t.getTextField("topmostSubform[0].Page1[0].f1_92[0]").setText(d(o.totalCostBasis)),t.getTextField("topmostSubform[0].Page1[0].f1_94[0]").setText(d(o.totalGainLoss)))}function lt(t,e,o,s){t.getCheckBox("topmostSubform[0].Page2[0].c2_1[0]").check();for(let n=0;n<e.length&&n<14;n++){let r=e[n],i=n+1,c=(i-1)*8+3;try{t.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${i}[0].f2_${T(c)}[0]`).setText(G(r.description,100)),t.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${i}[0].f2_${T(c+1)}[0]`).setText(r.dateAcquired),t.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${i}[0].f2_${T(c+2)}[0]`).setText(r.dateSold),t.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${i}[0].f2_${T(c+3)}[0]`).setText(d(r.proceeds)),t.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${i}[0].f2_${T(c+4)}[0]`).setText(d(r.costBasis)),t.getTextField(`topmostSubform[0].Page2[0].Table_Line1_Part2[0].Row${i}[0].f2_${T(c+7)}[0]`).setText(d(r.gainLoss))}catch(l){console.error(`Error filling Part II row ${i}:`,l)}}s&&(t.getTextField("topmostSubform[0].Page2[0].f2_91[0]").setText(d(o.totalProceeds)),t.getTextField("topmostSubform[0].Page2[0].f2_92[0]").setText(d(o.totalCostBasis)),t.getTextField("topmostSubform[0].Page2[0].f2_94[0]").setText(d(o.totalGainLoss)))}function mt(t,e){let s=[["Type","Description","Date Acquired","Date Sold","Proceeds","Cost Basis","Gain/Loss","Holding Days","Term"]];for(let n of t.shortTerm)s.push(["Short-Term",I(n.description),n.dateAcquired,n.dateSold,n.proceeds.toFixed(2),n.costBasis.toFixed(2),n.gainLoss.toFixed(2),n.holdingDays.toString(),n.isLongTerm?"Long-Term":"Short-Term"]);for(let n of t.longTerm)s.push(["Long-Term",I(n.description),n.dateAcquired,n.dateSold,n.proceeds.toFixed(2),n.costBasis.toFixed(2),n.gainLoss.toFixed(2),n.holdingDays.toString(),n.isLongTerm?"Long-Term":"Short-Term"]);s.push([]),s.push(["SUMMARY","","","","","","","",""]),s.push([]),s.push(["Short-Term Total",`${t.shortTerm.length} transactions`,"","",t.shortTermSummary.totalProceeds.toFixed(2),t.shortTermSummary.totalCostBasis.toFixed(2),t.shortTermSummary.totalGainLoss.toFixed(2),"",""]),s.push(["Long-Term Total",`${t.longTerm.length} transactions`,"","",t.longTermSummary.totalProceeds.toFixed(2),t.longTermSummary.totalCostBasis.toFixed(2),t.longTermSummary.totalGainLoss.toFixed(2),"",""]),s.push([]),s.push(["GRAND TOTAL",`${t.totalTransactions} transactions`,"","",(t.shortTermSummary.totalProceeds+t.longTermSummary.totalProceeds).toFixed(2),(t.shortTermSummary.totalCostBasis+t.longTermSummary.totalCostBasis).toFixed(2),t.totalGainLoss.toFixed(2),"",""]);let a=s.map(n=>n.join(",")).join(`
+`);return new Blob([a],{type:"text/csv;charset=utf-8;"})}function I(t){return t.includes(",")||t.includes('"')||t.includes(`
+`)?`"${t.replace(/"/g,'""')}"`:t}async function D(){let t=await fetch("public/IRS_Form_8949.pdf");if(!t.ok)throw new Error("IRS Form 8949 template not found. Please place IRS_Form_8949.pdf in the public/ directory.");return await t.arrayBuffer()}function d(t){return t.toFixed(2)}function T(t){return t.toString().padStart(2,"0")}function G(t,e){return!t||t.length<=e?t:t.substring(0,e-3)+"..."}function O(t,e){let o=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);t.forEach((s,a)=>{setTimeout(()=>{let n=URL.createObjectURL(s),r=document.createElement("a");r.href=n,r.download=e[a],o&&(r.target="_blank",r.rel="noopener noreferrer"),document.body.appendChild(r),r.click(),document.body.removeChild(r),o&&a===0&&setTimeout(()=>{dt()},500),setTimeout(()=>URL.revokeObjectURL(n),1e3)},a*1500)})}function dt(){if(document.getElementById("mobile-download-tip"))return;let e=document.createElement("div");e.id="mobile-download-tip",e.className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe",e.style.animation="slideUp 0.3s ease-out",e.innerHTML=`
+    <style>
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
         }
-        updateStatus('Calculating capital gains and losses...');
-        currentReport = await generateTaxReport(trades, taxYear);
-        displaySummary(currentReport);
-        showSuccess('Tax calculations complete! Click "Download PDF" to generate your forms.');
-    }
-    catch (error) {
-        showError(`Error: ${error.message}`);
-        console.error(error);
-    }
-    finally {
-        hideLoading();
-    }
-}
-async function handleDownload() {
-    if (!currentReport)
-        return;
-    try {
-        const mode = document.querySelector('input[name="mode"]:checked')?.value || 'summary';
-        const taxYear = parseInt(document.getElementById('tax-year').value);
-        updateStatus('Generating files...');
-        const { files, filenames } = await generateForm8949(currentReport, { taxYear, mode });
-        downloadPDFs(files, filenames);
-        // Track form generation event in Vercel Analytics
-        trackFormGeneration(mode, taxYear, currentReport.totalTransactions);
-        // Show accurate success message based on mode
-        const message = mode === 'summary'
-            ? 'Generated PDF and CSV successfully! Check your downloads.'
-            : 'Generated PDF successfully! Check your downloads.';
-        showSuccess(message);
-    }
-    catch (error) {
-        showError(`File generation failed: ${error.message}`);
-        console.error(error);
-    }
-}
-function displaySummary(report) {
-    const summary = document.getElementById('summary-section');
-    if (!summary)
-        return;
-    document.getElementById('total-trades').textContent = String(report.totalTransactions);
-    document.getElementById('short-term-count').textContent = String(report.shortTerm.length);
-    document.getElementById('long-term-count').textContent = String(report.longTerm.length);
-    document.getElementById('short-term-total').textContent = formatCurrency(report.shortTermSummary.totalGainLoss);
-    document.getElementById('long-term-total').textContent = formatCurrency(report.longTermSummary.totalGainLoss);
-    document.getElementById('total-gain-loss').textContent = formatCurrency(report.totalGainLoss);
-    summary.classList.remove('hidden');
-    summary.scrollIntoView({ behavior: 'smooth' });
-}
-// UI utilities
-function showLoading() {
-    document.getElementById('loading')?.classList.remove('hidden');
-}
-function hideLoading() {
-    document.getElementById('loading')?.classList.add('hidden');
-}
-function updateStatus(message) {
-    const status = document.getElementById('status-message');
-    if (status)
-        status.textContent = message;
-    console.log(message);
-}
-function showError(message) {
-    const error = document.getElementById('error-message');
-    if (error) {
-        error.textContent = message;
-        error.classList.remove('hidden');
-    }
-    hideLoading();
-}
-function showSuccess(message) {
-    const success = document.getElementById('success-message');
-    if (success) {
-        success.textContent = message;
-        success.classList.remove('hidden');
-    }
-}
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-    }).format(amount);
-}
-// Track custom events in Vercel Analytics
-function trackFormGeneration(mode, taxYear, transactionCount) {
-    track('Form Generated', {
-        mode,
-        taxYear,
-        transactionCount
-    });
-}
-//# sourceMappingURL=main.js.map
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideDown {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+      }
+    </style>
+    <div class="mx-auto max-w-md mb-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-2xl shadow-2xl p-4 flex items-start gap-3">
+      <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div class="flex-1">
+        <p class="font-semibold text-sm mb-1">To save your PDF:</p>
+        <p class="text-xs opacity-90">Tap the <strong>Share</strong> button, then select <strong>Save to Files</strong></p>
+      </div>
+      <button onclick="this.closest('#mobile-download-tip').remove()" class="text-white opacity-75 hover:opacity-100 flex-shrink-0 ml-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  `,e.addEventListener("click",a=>{a.target===e&&s()}),document.body.appendChild(e);let o=setTimeout(()=>{s()},6e3);function s(){clearTimeout(o),e.style.animation="slideDown 0.3s ease-in",setTimeout(()=>e.remove(),300)}}var ut="@vercel/analytics",gt="1.6.1",ft=()=>{window.va||(window.va=function(...e){(window.vaq=window.vaq||[]).push(e)})};function k(){return typeof window<"u"}function N(){try{let t="production";if(t==="development"||t==="test")return"development"}catch{}return"production"}function Tt(t="auto"){if(t==="auto"){window.vam=N();return}window.vam=t}function j(){return(k()?window.vam:N())||"production"}function q(){return j()==="production"}function S(){return j()==="development"}function pt(t,{[t]:e,...o}){return o}function ht(t,e){if(!t)return;let o=t,s=[];for(let[a,n]of Object.entries(t))typeof n=="object"&&n!==null&&(e.strip?o=pt(a,o):s.push(a));if(s.length>0&&!e.strip)throw Error(`The following properties are not valid: ${s.join(", ")}. Only strings, numbers, booleans, and null are allowed.`);return o}function yt(t){return t.scriptSrc?t.scriptSrc:S()?"https://va.vercel-scripts.com/v1/script.debug.js":t.basePath?`${t.basePath}/insights/script.js`:"/_vercel/insights/script.js"}function z(t={debug:!0}){var e;if(!k())return;Tt(t.mode),ft(),t.beforeSend&&((e=window.va)==null||e.call(window,"beforeSend",t.beforeSend));let o=yt(t);if(document.head.querySelector(`script[src*="${o}"]`))return;let s=document.createElement("script");s.src=o,s.defer=!0,s.dataset.sdkn=ut+(t.framework?`/${t.framework}`:""),s.dataset.sdkv=gt,t.disableAutoTrack&&(s.dataset.disableAutoTrack="1"),t.endpoint?s.dataset.endpoint=t.endpoint:t.basePath&&(s.dataset.endpoint=`${t.basePath}/insights`),t.dsn&&(s.dataset.dsn=t.dsn),s.onerror=()=>{let a=S()?"Please check if any ad blockers are enabled and try again.":"Be sure to enable Web Analytics for your project and deploy again. See https://vercel.com/docs/analytics/quickstart for more information.";console.log(`[Vercel Web Analytics] Failed to load script from ${o}. ${a}`)},S()&&t.debug===!1&&(s.dataset.debug="false"),document.head.appendChild(s)}function U(t,e,o){var s,a;if(!k()){let n="[Vercel Web Analytics] Please import `track` from `@vercel/analytics/server` when using this function in a server environment";if(q())console.warn(n);else throw new Error(n);return}if(!e){(s=window.va)==null||s.call(window,"event",{name:t,options:o});return}try{let n=ht(e,{strip:q()});(a=window.va)==null||a.call(window,"event",{name:t,data:n,options:o})}catch(n){n instanceof Error&&S()&&console.error(n)}}var w=null;document.addEventListener("DOMContentLoaded",()=>{console.log("Polymarket Tax Form Generator initialized"),z(),Pt()});function Pt(){let t=document.getElementById("tax-form"),e=document.getElementById("download-btn");t?.addEventListener("submit",wt),e?.addEventListener("click",xt)}async function wt(t){t.preventDefault();let e=document.getElementById("wallet-input").value,o=parseInt(document.getElementById("tax-year").value),s=R(e);if(!s){_("Invalid wallet address or Polymarket profile URL");return}try{bt(),b("Fetching trading history...");let a=await $(s,o,n=>b(n));if(a.length===0){_(`No trades found for ${o}`);return}b("Calculating capital gains and losses..."),w=await A(a,o),St(w),Y('Tax calculations complete! Click "Download PDF" to generate your forms.')}catch(a){_(`Error: ${a.message}`),console.error(a)}finally{H()}}async function xt(){if(w)try{let t=document.querySelector('input[name="mode"]:checked')?.value||"summary",e=parseInt(document.getElementById("tax-year").value);b("Generating files...");let{files:o,filenames:s}=await M(w,{taxYear:e,mode:t});O(o,s),_t(t,e,w.totalTransactions),Y(t==="summary"?"Generated PDF and CSV successfully! Check your downloads.":"Generated PDF successfully! Check your downloads.")}catch(t){_(`File generation failed: ${t.message}`),console.error(t)}}function St(t){let e=document.getElementById("summary-section");e&&(document.getElementById("total-trades").textContent=String(t.totalTransactions),document.getElementById("short-term-count").textContent=String(t.shortTerm.length),document.getElementById("long-term-count").textContent=String(t.longTerm.length),document.getElementById("short-term-total").textContent=L(t.shortTermSummary.totalGainLoss),document.getElementById("long-term-total").textContent=L(t.longTermSummary.totalGainLoss),document.getElementById("total-gain-loss").textContent=L(t.totalGainLoss),e.classList.remove("hidden"),e.scrollIntoView({behavior:"smooth"}))}function bt(){document.getElementById("loading")?.classList.remove("hidden")}function H(){document.getElementById("loading")?.classList.add("hidden")}function b(t){let e=document.getElementById("status-message");e&&(e.textContent=t),console.log(t)}function _(t){let e=document.getElementById("error-message");e&&(e.textContent=t,e.classList.remove("hidden")),H()}function Y(t){let e=document.getElementById("success-message");e&&(e.textContent=t,e.classList.remove("hidden"))}function L(t){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(t)}function _t(t,e,o){U("Form Generated",{mode:t,taxYear:e,transactionCount:o})}
