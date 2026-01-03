@@ -68,14 +68,19 @@ async function handleDownload(): Promise<void> {
     const mode = (document.querySelector('input[name="mode"]:checked') as HTMLInputElement)?.value as 'summary' | 'detailed' || 'summary';
     const taxYear = parseInt((document.getElementById('tax-year') as HTMLSelectElement).value);
 
-    updateStatus('Generating PDF...');
+    updateStatus('Generating files...');
     const { files, filenames } = await generateForm8949(currentReport, { taxYear, mode });
 
     downloadPDFs(files, filenames);
-    showSuccess(`Generated ${filenames.length} PDF file(s) successfully!`);
+
+    // Show accurate success message based on mode
+    const message = mode === 'summary'
+      ? 'Generated PDF and CSV successfully! Check your downloads.'
+      : 'Generated PDF successfully! Check your downloads.';
+    showSuccess(message);
 
   } catch (error: any) {
-    showError(`PDF generation failed: ${error.message}`);
+    showError(`File generation failed: ${error.message}`);
     console.error(error);
   }
 }
