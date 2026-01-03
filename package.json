@@ -4,9 +4,11 @@
   "description": "Generate IRS Form 8949 for Polymarket trades (100% client-side)",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build:css": "tailwindcss -i ./src/styles.css -o ./public/output.css --minify",
+    "build:ts": "tsc",
+    "build": "npm run build:css && npm run build:ts",
     "watch": "tsc --watch",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf dist public/output.css",
     "dev": "python3 -m http.server 8000"
   },
   "keywords": [
@@ -19,6 +21,9 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.3.3"
   },
   "dependencies": {
