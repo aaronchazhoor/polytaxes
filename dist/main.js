@@ -2,6 +2,7 @@
  * Main application entry point
  * Coordinates UI interactions and workflow
  */
+import { inject } from '@vercel/analytics';
 import { extractWalletAddress, fetchTradingHistory } from './api.js';
 import { generateTaxReport } from './calculator.js';
 import { generateForm8949, downloadPDFs } from './pdf.js';
@@ -9,6 +10,7 @@ let currentReport = null;
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Polymarket Tax Form Generator initialized');
+    inject(); // Initialize Vercel Analytics
     setupEventListeners();
 });
 function setupEventListeners() {

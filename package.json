@@ -9,7 +9,13 @@
     "clean": "rm -rf dist",
     "dev": "python3 -m http.server 8000"
   },
-  "keywords": ["polymarket", "taxes", "form-8949", "irs", "crypto"],
+  "keywords": [
+    "polymarket",
+    "taxes",
+    "form-8949",
+    "irs",
+    "crypto"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -17,6 +23,7 @@
   },
   "dependencies": {
     "@types/node": "^20.11.0",
+    "@vercel/analytics": "^1.6.1",
     "pdf-lib": "^1.17.1"
   }
 }
