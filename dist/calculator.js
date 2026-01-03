@@ -92,7 +92,7 @@ function matchSellToBuys(inventory, key, trade) {
         const gainLoss = proceeds - costBasis;
         const holdingDays = Math.floor((trade.timestamp - lot.acquisitionDate) / 86400);
         entries.push({
-            description: `${trade.outcome.toUpperCase()} token - ${truncate(trade.title, 20)}`,
+            description: `${trade.outcome.toUpperCase()} token - ${truncate(trade.title, 60)}`,
             dateAcquired: formatDate(lot.acquisitionDate),
             dateSold: formatDate(trade.timestamp),
             proceeds: round(proceeds),
@@ -111,7 +111,7 @@ function matchSellToBuys(inventory, key, trade) {
     if (remaining > 0.0001) {
         const proceeds = remaining * proceedsPerToken;
         entries.push({
-            description: `${trade.outcome.toUpperCase()} token - ${truncate(trade.title, 20)}`,
+            description: `${trade.outcome.toUpperCase()} token - ${truncate(trade.title, 60)}`,
             dateAcquired: 'VARIOUS',
             dateSold: formatDate(trade.timestamp),
             proceeds: round(proceeds),
@@ -162,7 +162,7 @@ async function processWorthlessPositions(positions, taxYearEnd) {
             for (const lot of position.lots) {
                 const holdingDays = Math.floor((taxYearEnd - lot.acquisitionDate) / 86400);
                 entries.push({
-                    description: `${position.outcome.toUpperCase()} token - ${truncate(position.title, 20)}`,
+                    description: `${position.outcome.toUpperCase()} token - ${truncate(position.title, 60)}`,
                     dateAcquired: formatDate(lot.acquisitionDate),
                     dateSold: formatDate(taxYearEnd),
                     proceeds: 0,
