@@ -7,12 +7,14 @@ import { extractWalletAddress, fetchTradingHistory } from './api.js';
 import { generateTaxReport } from './calculator.js';
 import { generateForm8949, downloadPDFs } from './pdf.js';
 import type { TaxReport } from './types.js';
+import { inject, track } from '@vercel/analytics';
 
 let currentReport: TaxReport | null = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Polymarket Tax Form Generator initialized');
+  inject(); // Initialize Vercel Analytics
   setupEventListeners();
 });
 
@@ -144,16 +146,9 @@ function formatCurrency(amount: number): string {
 
 // Track custom events in Vercel Analytics
 function trackFormGeneration(mode: string, taxYear: number, transactionCount: number): void {
-  // @ts-ignore - va is injected by Vercel Analytics script
-  if (typeof window.va !== 'undefined') {
-    // @ts-ignore
-    window.va('event', {
-      name: 'Form Generated',
-      data: {
-        mode,
-        taxYear,
-        transactionCount
-      }
-    });
-  }
+  track('Form Generated', {
+    mode,
+    taxYear,
+    transactionCount
+  });
 }
